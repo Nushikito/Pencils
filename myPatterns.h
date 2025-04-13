@@ -18,10 +18,24 @@ public:
     virtual T GetCurrent() const = 0;
 };
 
+template<typename T>
+class Containers
+{
+public:
+    Containers() {}
+    virtual Iterator<T>* GetIterator() = 0;
+    virtual ~Containers() {}
+};
+
+template<typename T>
+class vectorClassIterator;
+
+template<typename T>
+class arrayClassIterator;
 
 //Шаблонный класс "Вектор"
 template <typename T>
-class vectorClass
+class vectorClass : public Containers<T>
 {
 private:
     vector<T> vectorOfPencils;
@@ -30,11 +44,42 @@ public:
     void pushBack(T newElement) { vectorOfPencils.push_back(newElement); }
     T getElement(size_t index) const { return vectorOfPencils[index]; }
     void information() const { wcout << L"Это вектор!"; }
+    Iterator<T>* GetIterator() override { return new vectorClassIterator<T>(vectorOfPencils, vectorOfPencils.size()); }
 };
 
 //Итератор для обхода вектора
 
+template <typename T>
+class vectorClassIterator : public Iterator<T>
+{
+private:
+    const vector<T>* vectorContainer;
+    size_t positionInVector;
+    size_t vectorSize;
+public:
+    vectorClassIterator(const vector<T>& container, size_t sizeOfVector) : vectorContainer(&container), positionInVector(0), vectorSize(sizeOfVector) {}
+    void First() override { positionInVector = 0; }
+    void Next() override { positionInVector++; }
+    bool IsDone() const override { return (positionInVector >= vectorSize); }
+    T GetCurrent()const override { return (*vectorContainer)[positionInVector]; }
+};
+
 const size_t maxSize = 100;
+
+//Шаблонный класс "Массив"
+template <typename T>
+class arrayClass : public Containers<T>
+{
+private:
+    T items[maxSize];
+    size_t arraySize = 0;
+public:
+    void printIndex() { for(size_t i = 0; i < arraySize; i++) { cout << i << endl; } }
+    size_t numbersOfElements() const { return arraySize; }
+    void pushBack(T newElement) { items[arraySize++] = newElement; }
+    T getElement(size_t index) const { return items[index]; }
+    Iterator<T>* GetIterator() override { return new arrayClassIterator<T>(items, arraySize); }
+};
 
 //Итератор для обхода массива
 template <typename T>
@@ -45,59 +90,50 @@ private:
     size_t positionInArray;
     size_t arraySize;
 public:
-    arrayClassIterator(T *container, size_t sizeOfArray) : arrayContainer(container), positionInContainer(0), arraySize(sizeOfArray) {}
+    arrayClassIterator(T *container, size_t sizeOfArray) : arrayContainer(container), positionInArray(0), arraySize(sizeOfArray) {}
     void First() override { positionInArray = 0; }
     void Next() override { positionInArray++; }
-    bool IsDone const override { return (positionInArray >= arraySize); }
-    T GetCurrent() const override { return arrayContainer[positionInArray] }
+    bool IsDone() const override { return (positionInArray >= arraySize); }
+    T GetCurrent()const override { return arrayContainer[positionInArray]; }
 };
 
-//Шаблонный класс "Массив"
-template <typename T>
-class arrayClass
-{
-private:
-    T items[maxSize];
-    int arraySize= 0;
-public:
-    void printIndex() { for(int i = 0; i < arraySize; i++) { cout << i << endl; } }
-    size_t numbersOfElements() const { return arraySize; }
-    void pushBack(T newElement) { items[arraySize++] == newElement; }
-    T getElement(size_t index) const { return items[index]; }
-};
-
-
-//Итератор для вектора
+//Декоратор
 template<typename T>
-class vectorIterator : public Iterator<T>
+class IteratorDecorator : public Iterator<T>
 {
-private:
-    const vectorClass<T> *vectorContainer;
-    int position = 0;
-public:
-    vectorIterator(vectorClass<T> *container) : vectorContainer(container) {}
+protected:
+    Iterator<T> *It;
 
-    void First() override { position = 0; }
-    void Next() override { position++; }
-    bool IsDone() const override { return (position >= vectorContainer->numbersOfElements()); }
-    T GetCurrent() const override { return vectorContainer->getElement(position); }
+public:
+    IteratorDecorator(Iterator<T> *it) : It(it) {}
+    virtual ~IteratorDecorator() { delete It; }
+    virtual void First() { It->First(); }
+    virtual void Next() { It->Next(); }
+    virtual bool IsDone() const { return It->IsDone(); }
+    virtual T GetCurrent() const { return It->GetCurrent(); }
 };
 
-
-//Итератор для массива
-template<typename T>
-class arrayIterator : public Iterator<T>
+//Адаптер
+template<typename ContainerType, typename ItemType>
+class ConstIteratorAdapter : public Iterator<ItemType>
 {
-private:
-    const arrayClass<T> *arrayContainer;
-    int position = 0;
-public:
-    arrayIterator(arrayClass<T> *container) : arrayContainer(container) {}
+protected:
+    ContainerType *Container;
+    typename ContainerType::const_iterator It;
 
-    void First() override { position = 0; }
-    void Next() override { position++; }
-    bool IsDone() const override { return (position >= arrayContainer->numbersOfElements()); }
-    T GetCurrent() const override { return arrayContainer->getElement(position); }
+public:
+    ConstIteratorAdapter(ContainerType *container)
+    : Container(container)
+    {
+        It = Container->begin();
+    }
+
+    virtual ~ConstIteratorAdapter() {}
+    virtual void First() { It = Container->begin(); }
+    virtual void Next() { It++; }
+    virtual bool IsDone() const { return (It == Container->end()); }
+    virtual ItemType GetCurrent() const { return *It; }
 };
+
 
 #endif // MYPATTERNS_H_INCLUDED
