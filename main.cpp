@@ -13,8 +13,50 @@ enum class pencilsType : int
     Undifined = 0
 };
 
+enum class pencilSharperingEnum : int
+{
+    sharpener,
+    sandpaper,
+    knife,
+};
+
+class pencilSharperingStrategy
+{
+public:
+    virtual ~pencilSharperingStrategy() {}
+    virtual void sharpering() = 0;
+};
+
+class sharperingWithASharpener : public pencilSharperingStrategy
+{
+    void sharpering() { wcout << L"Карандаш заточен точилкой" << endl; }
+};
+
+class sharperingWithASandpaper : public pencilSharperingStrategy
+{
+    void sharpering() { wcout << L"Карандаш заточен наждачной бумагой" << endl; }
+};
+
+class sharperingWithAKnife : public pencilSharperingStrategy
+{
+    void sharpering() { wcout << L"Карандаш заточен ножом" << endl;  }
+};
+
+pencilSharperingStrategy *createPencilSharperingStrategy(pencilSharperingEnum sharperingEnum)
+{
+    switch(sharperingEnum)
+    {
+        case pencilSharperingEnum::sharpener: return new sharperingWithASharpener;
+        case pencilSharperingEnum::sandpaper: return new sharperingWithASandpaper;
+        case pencilSharperingEnum::knife: return new sharperingWithAKnife;
+    }
+}
+
 class Pencils
 {
+private:
+    pencilSharperingStrategy *typeOfSharpering;
+    void usingPencilSharperingStrategy() { typeOfSharpering->sharpering(); }
 public:
     Pencils() {};
 
@@ -35,13 +77,19 @@ public:
     virtual void random() { srand(time(0)); int z = 0; for(int i = 0; i < 20; i++){ int rndm = rand()%10; if(rndm <= 5){z += 1;} } cout << z; } //Метод для белых карандашей
     virtual void coloredPencils() { wcout << L"Количество цветных карандашей: "; } //Метод для цветных карандашей
 
-    virtual ~Pencils() { wcout << "Карандашей больше нет :(" << endl; };
+    virtual void printType() = 0;
+    virtual void printForm() = 0;
+    void sharpering() { printType(); printForm(); usingPencilSharperingStrategy(); }
+
+    void setSharperingStrategy(pencilSharperingStrategy *sharperingEnum) { typeOfSharpering = sharperingEnum; }
+
+    virtual ~Pencils() { wcout << L"Карандашей больше нет :(" << endl; };
 };
 
 class BlackPencils : public Pencils
 {
 public:
-    BlackPencils() {};
+    BlackPencils() : Pencils() { setSharperingStrategy(createPencilSharperingStrategy(pencilSharperingEnum::sharpener)); }
 
     wstring message() { Pencils::message(); wcout << L"Давайте узнаем, какие они!" << endl; return Pencils::message(); }
     wstring getDegreeOfHardness(wstring doh) { wcout << L"Их степень твердости: " << Pencils::getDegreeOfHardness(doh) << endl; return Pencils::getDegreeOfHardness(doh); }
@@ -49,19 +97,25 @@ public:
     int getCost(int cost) { wcout << L"Цена за штуку: " << Pencils::getCost(cost) << endl; return Pencils::getCost(cost); }
     bool getSharpenes() { wcout << L"Заточен ли карандаш? " << Pencils::getSharpenes() << endl; return Pencils::getSharpenes(); }
 
+    void printType() { wcout << L"Черный карандаш" << endl; }
+    void printForm() { wcout << L"Круглые карандаши" << endl; }
+
     ~BlackPencils() { wcout << L"Черных карандашей больше нет :(" << endl; };
 };
 
 class WhitePencils : public Pencils
 {
 public:
-    WhitePencils() {};
+    WhitePencils() : Pencils() { setSharperingStrategy(createPencilSharperingStrategy(pencilSharperingEnum::sandpaper)); };
 
     void random() { wcout << L"Ох, в упаковке есть сломанные карандаши: "; Pencils::random(); cout << endl; }
     wstring getDegreeOfHardness(wstring doh) { wcout << L"Их степень твердости: " << Pencils::getDegreeOfHardness(doh) << endl; return Pencils::getDegreeOfHardness(doh); }
     double getLenght() { wcout << L"Их длина: " << Pencils::getLenght() << endl; return Pencils::getLenght(); }
     int getCost(int cost) { wcout << L"Цена за штуку: " << Pencils::getCost(cost) << endl; return Pencils::getCost(cost); }
     bool getSharpenes() { wcout << L"Заточен ли карандаш? " << Pencils::getSharpenes() << endl; return Pencils::getSharpenes(); }
+
+    void printType() { wcout << L"Белый карандаш" << endl; }
+    void printForm() { wcout << L"Карандаш с ребрами" << endl; }
 
    ~WhitePencils() { wcout << L"Больше нет белых карандашей :(" << endl; };
 };
@@ -71,13 +125,16 @@ class ColoredPencils : public Pencils
 public:
     int numbers = 20;
 
-    ColoredPencils() {};
+    ColoredPencils() : Pencils() { setSharperingStrategy(createPencilSharperingStrategy(pencilSharperingEnum::knife)); };
 
     void coloredPencils() { Pencils::coloredPencils(); cout << numbers << endl; }
     wstring getDegreeOfHardness(wstring doh) { wcout << L"Их степень твердости: " << Pencils::getDegreeOfHardness(doh) << endl; return Pencils::getDegreeOfHardness(doh); }
     double getLenght() { wcout << L"Их длина: " << Pencils::getLenght() << endl; return Pencils::getLenght(); }
     int getCost(int cost) { wcout << L"Цена за штуку: " << Pencils::getCost(cost) << endl; return Pencils::getCost(cost); }
     bool getSharpenes() { wcout << L"Заточен ли карандаш? " << Pencils::getSharpenes() << endl; return Pencils::getSharpenes(); }
+
+    void printType() { wcout << L"Цветной карандаш" << endl; }
+    void printForm() { wcout << L"Круглый карандаш" << endl; }
 
     ~ColoredPencils() { wcout << L"Цветных карандашей больше нет :(" << endl; };
 };
@@ -165,7 +222,7 @@ int main()
     cout << endl;
 
     for(int i = 0; i < sizeVector; i++) { int randomPencils = rand()%3 + 1; Pencils* newPencilsForVector = createPencils(randomPencils, degreeOfHardness, costVector);
-    pencilsVector.pushBack(newPencilsForVector); cout << endl; }
+    newPencilsForVector->sharpering(); pencilsVector.pushBack(newPencilsForVector); cout << endl; }
     wcout << L"Какой же у нас контейнер?: ";
     pencilsVector.information();
     create(pencilsVector.GetIterator());
